@@ -25,37 +25,20 @@ func TestJSONSoundpackFromSoundpackPaths(t *testing.T) {
 		t.Fatalf("Failed to create sounds directory: %v", err)
 	}
 	
-	// Create dummy WAV files (minimal valid WAV headers)
-	createMinimalWAV := func(path string) error {
-		// Minimal WAV file with RIFF header
-		wavData := []byte{
-			0x52, 0x49, 0x46, 0x46, // "RIFF"
-			0x24, 0x00, 0x00, 0x00, // File size - 8
-			0x57, 0x41, 0x56, 0x45, // "WAVE"
-			0x66, 0x6D, 0x74, 0x20, // "fmt "
-			0x10, 0x00, 0x00, 0x00, // fmt chunk size
-			0x01, 0x00,             // Audio format (PCM)
-			0x01, 0x00,             // Num channels (mono)
-			0x44, 0xAC, 0x00, 0x00, // Sample rate (44100)
-			0x88, 0x58, 0x01, 0x00, // Byte rate
-			0x02, 0x00,             // Block align
-			0x10, 0x00,             // Bits per sample
-			0x64, 0x61, 0x74, 0x61, // "data"
-			0x00, 0x00, 0x00, 0x00, // Data size
+	// Create dummy WAV files using the existing helper
+	wavData := createMinimalWAV()
+	wavFiles := []string{"success.wav", "error.wav", "loading.wav", "default.wav"}
+	for _, filename := range wavFiles {
+		if err := os.WriteFile(filepath.Join(soundsDir, filename), wavData, 0644); err != nil {
+			t.Fatalf("Failed to create WAV file %s: %v", filename, err)
 		}
-		return os.WriteFile(path, wavData, 0644)
 	}
 	
+	// Get full paths for JSON mapping
 	successWAV := filepath.Join(soundsDir, "success.wav")
 	errorWAV := filepath.Join(soundsDir, "error.wav")
 	loadingWAV := filepath.Join(soundsDir, "loading.wav")
 	defaultWAV := filepath.Join(soundsDir, "default.wav")
-	
-	for _, wavPath := range []string{successWAV, errorWAV, loadingWAV, defaultWAV} {
-		if err := createMinimalWAV(wavPath); err != nil {
-			t.Fatalf("Failed to create WAV file %s: %v", wavPath, err)
-		}
-	}
 	
 	// Create a JSON soundpack file
 	jsonSoundpackPath := filepath.Join(tmpDir, "custom.json")
@@ -207,24 +190,9 @@ func TestDirectorySoundpackStillWorks(t *testing.T) {
 		t.Fatalf("Failed to create soundpack directory: %v", err)
 	}
 	
-	// Create a minimal default.wav
+	// Create a minimal default.wav using the existing helper
 	defaultWAV := filepath.Join(soundpackDir, "default.wav")
-	wavData := []byte{
-		0x52, 0x49, 0x46, 0x46, // "RIFF"
-		0x24, 0x00, 0x00, 0x00, // File size - 8
-		0x57, 0x41, 0x56, 0x45, // "WAVE"
-		0x66, 0x6D, 0x74, 0x20, // "fmt "
-		0x10, 0x00, 0x00, 0x00, // fmt chunk size
-		0x01, 0x00,             // Audio format (PCM)
-		0x01, 0x00,             // Num channels (mono)
-		0x44, 0xAC, 0x00, 0x00, // Sample rate (44100)
-		0x88, 0x58, 0x01, 0x00, // Byte rate
-		0x02, 0x00,             // Block align
-		0x10, 0x00,             // Bits per sample
-		0x64, 0x61, 0x74, 0x61, // "data"
-		0x00, 0x00, 0x00, 0x00, // Data size
-	}
-	err = os.WriteFile(defaultWAV, wavData, 0644)
+	err = os.WriteFile(defaultWAV, createMinimalWAV(), 0644)
 	if err != nil {
 		t.Fatalf("Failed to create default.wav: %v", err)
 	}
