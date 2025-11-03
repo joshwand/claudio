@@ -204,23 +204,60 @@ func initializeAudioSystem(cmd *cobra.Command, cli *CLI, cfg *config.Config) err
 				"identifier", cfg.DefaultSoundpack, "error", err)
 		}
 	} else {
-		// Check if primary soundpack path exists (both relative and absolute)
-		if _, statErr := os.Stat(cfg.DefaultSoundpack); statErr != nil {
-			slog.Info("configured soundpack not found, will try platform fallback",
-				"soundpack", cfg.DefaultSoundpack, "error", statErr)
-			shouldTryPlatformFallback = true
+		// First, check if any soundpack_paths entry is a JSON file for this soundpack
+		// This handles the case where user specifies: 
+		//   default_soundpack: "custom"
+		//   soundpack_paths: ["/path/to/custom.json"]
+		for _, path := range cfg.SoundpackPaths {
+			if strings.HasSuffix(strings.ToLower(path), ".json") {
+				slog.Debug("checking JSON soundpack path", "path", path)
+				// Try to load it as a JSON soundpack
+				var jsonMapper soundpack.PathMapper
+				jsonMapper, err = soundpack.LoadJSONSoundpack(path)
+				if err == nil {
+					// Check if the name matches our configured soundpack
+					if jsonMapper.GetName() == cfg.DefaultSoundpack {
+						slog.Info("loaded JSON soundpack from soundpack_paths",
+							"name", jsonMapper.GetName(),
+							"path", path)
+						mapper = jsonMapper
+						break
+					} else {
+						slog.Debug("JSON soundpack name doesn't match",
+							"expected", cfg.DefaultSoundpack,
+							"found", jsonMapper.GetName(),
+							"path", path)
+					}
+				} else {
+					slog.Debug("failed to load JSON soundpack", "path", path, "error", err)
+				}
+			}
 		}
 		
-		// Always try to create mapper first
-		mapper, err = soundpack.CreateSoundpackMapperWithBasePaths(
-			cfg.DefaultSoundpack,
-			cfg.DefaultSoundpack, // Try exact path first
-			soundpackPaths,       // Fallback to base directory search
-		)
-		
-		// If the configured path doesn't exist, force platform fallback even if mapper creation succeeded
-		if shouldTryPlatformFallback && err == nil {
-			err = fmt.Errorf("configured soundpack path does not exist, trying platform fallback")
+		// If no JSON soundpack was found, try traditional directory-based approach
+		if mapper == nil {
+			// Check if DefaultSoundpack is itself a path that exists
+			if _, statErr := os.Stat(cfg.DefaultSoundpack); statErr != nil {
+				// DefaultSoundpack is just a name (not a valid path), mark for potential platform fallback
+				slog.Debug("default_soundpack is not a valid path, will search in base paths", 
+					"name", cfg.DefaultSoundpack, "stat_error", statErr)
+				shouldTryPlatformFallback = true
+			}
+			
+			// Try to create mapper (either from path or by searching base paths)
+			mapper, err = soundpack.CreateSoundpackMapperWithBasePaths(
+				cfg.DefaultSoundpack,
+				cfg.DefaultSoundpack, // Try exact path first
+				soundpackPaths,       // Fallback to base directory search
+			)
+			
+			// If mapper creation succeeded but we marked for platform fallback,
+			// force an error to trigger platform JSON fallback
+			if shouldTryPlatformFallback && err == nil {
+				slog.Info("configured soundpack not found, will try platform fallback",
+					"soundpack", cfg.DefaultSoundpack)
+				err = fmt.Errorf("configured soundpack path does not exist, trying platform fallback")
+			}
 		}
 	}
 	
