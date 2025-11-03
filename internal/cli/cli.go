@@ -828,6 +828,24 @@ func getPlatformExecutableDirectory() string {
 	execDir := filepath.Dir(executable)
 	slog.Debug("executable directory detected for platform detection", "executable", executable, "directory", execDir)
 	
+	// If executable is in a temp build directory (like /tmp/go-buildXXX), 
+	// also check current working directory for platform JSON files
+	if strings.Contains(executable, "/tmp/go-build") || strings.Contains(executable, "go-build") {
+		cwd, err := os.Getwd()
+		if err == nil {
+			slog.Debug("executable appears to be temp build, also checking current working directory", 
+				"cwd", cwd, "temp_exec", executable)
+			// Check if platform JSON exists in current directory
+			cfgMgr := config.NewConfigManager()
+			cwdResult := cfgMgr.GetPlatformSoundpack(afero.NewOsFs(), cwd)
+			if cwdResult != "default" {
+				slog.Debug("found platform JSON in current working directory, using that", 
+					"cwd_result", cwdResult)
+				return cwd
+			}
+		}
+	}
+	
 	return execDir
 }
 
