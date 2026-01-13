@@ -29,12 +29,36 @@ Spending hours watching Claude Code work gets mind-numbing. Claudio fixes that b
 
 The cool part is how smart it gets. When Claude runs `git commit -m "fix bug"`, Claudio doesn't just play a generic "bash command" sound. It knows Claude is doing git stuff, specifically a commit, and picks sounds accordingly. If that specific sound doesn't exist, it falls back through git → bash → generic success → default. Nobody wants silence when their AI assistant's code works.
 
+## Installation
+
+### Quick Install (Recommended)
+
 ```bash
 go install claudio.click/cmd/claudio@latest
 claudio install
 ```
 
 That's it. The install command finds your Claude Code settings and adds the hooks automatically.
+
+### Pre-built Binaries
+
+Download pre-built binaries for your platform from the [releases page](https://github.com/joshwand/claudio/releases):
+
+- **Windows 10+**: `claudio-windows-amd64.exe`
+- **macOS Intel**: `claudio-darwin-amd64`
+- **macOS Apple Silicon**: `claudio-darwin-arm64`
+
+After downloading, make the binary executable (macOS/Linux):
+```bash
+chmod +x claudio-darwin-*
+```
+
+Then run the install command:
+```bash
+./claudio-darwin-amd64 install  # or claudio-darwin-arm64
+```
+
+### Manual Configuration
 
 Or manually configure Claude Code:
 
