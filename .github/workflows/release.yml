@@ -46,7 +46,7 @@ jobs:
         env:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
-          CGO_ENABLED: 0  # Static binary without C dependencies
+          CGO_ENABLED: 0  # Static binary - modernc.org/sqlite is CGo-free
         run: |
           go build -v -ldflags="-s -w" -o ${{ matrix.binary_name }} .
       
