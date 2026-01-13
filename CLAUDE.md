@@ -73,8 +73,15 @@ git push origin v$(grep 'const Version' internal/cli/cli.go | cut -d'"' -f2)
 rm -f claudio
 ```
 
+**Note**: Pushing a tag triggers the GitHub Actions workflow that automatically:
+- Builds static binaries for Windows 10 (amd64), macOS Intel (amd64), and macOS Apple Silicon (arm64)
+- Creates a GitHub Release with the binaries attached
+- Generates release notes automatically
+
 ### Post-Release
 - Verify tag appears on GitHub
+- Wait for GitHub Actions workflow to complete (~3-5 minutes)
+- Verify the release was created with all three binaries attached
 - Test `go install claudio.click/cmd/claudio@latest` works
 - Update any documentation referencing version numbers
 
